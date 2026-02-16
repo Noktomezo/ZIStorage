@@ -1,0 +1,40 @@
+name: Update Lists
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-lists:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Download zapret-hosts-user-exclude.txt
+        run: |
+          curl -sL "https://raw.githubusercontent.com/StressOzz/Zapret-Manager/refs/heads/main/zapret-hosts-user-exclude.txt" -o lists/zapret-hosts-user-exclude.txt
+      
+      - name: Download zapret-ip-user.txt
+        run: |
+          curl -sL "https://raw.githubusercontent.com/Noktomezo/RussiaFancyLists/refs/heads/main/lists/ipsets/full-and-cdn.lst" -o lists/zapret-ip-user.txt
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --exit-code; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add lists/zapret-hosts-user-exclude.txt lists/zapret-ip-user.txt
+          git commit -m "Update lists"
+          git push
